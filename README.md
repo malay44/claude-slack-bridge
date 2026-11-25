@@ -1,10 +1,23 @@
-# claude-slack-bridge
+# claude-slack-bridge: Slack events for Claude Code
 
-Let Claude Code sessions listen to Slack without polling.
+**A Claude Code plugin and always-on Slack bot that let Claude Code sessions (AI coding agents) receive Slack messages in real time, without polling.** Follow a Slack thread or channel, wait for a teammate's reply, watch DMs, and reply as a Slack bot, all from a Claude Code session.
 
-A small always-on Slack app (Bolt for Python, Socket Mode) receives every message its bot can see. It drops them unless a session subscribes. A session subscribes by naming a file and an optional filter; the bridge appends matching events to that file, one JSON line each, and the session watches it with Claude Code's Monitor tool. Sessions send messages as the bot with the Slack CLI.
+The Slack MCP server and Slack plugin can send messages, but reading new ones means polling. This bridge pushes Slack events to the agent instead, so a Claude Code session can act like a team member in Slack.
 
-Use it to let a session follow a thread or channel discussion, wait for your reply, or watch DMs to the bot, and act on new messages as they arrive.
+## How it works
+
+A small always-on Slack app (Bolt for Python, Socket Mode, no public URL needed) receives every message its bot can see. It drops them unless a session subscribes. A session subscribes by naming a file and an optional filter; the bridge appends matching events to that file, one JSON line each, and the session watches it with Claude Code's Monitor tool. Sessions send messages as the bot with the Slack CLI.
+
+```
+Slack ──Socket Mode──▶ bridge.py ──match──▶ <session>/events.jsonl ──Monitor──▶ Claude Code session
+                                                                                   │
+Slack ◀──────────────────── slack-bridge send (chat.postMessage) ◀─────────────────┘
+```
+
+Use cases:
+- Follow a Slack discussion and act on each new reply (summarize, open a ticket, run a check).
+- Ask a question in Slack from a long-running agent task and continue when someone answers.
+- Give a Claude Code session a Slack DM inbox.
 
 ## Parts
 
@@ -64,6 +77,10 @@ A subscription is a JSON file in `~/.claude-slack/subs/`: `{"out": "...", "match
 - Events that arrive while the bridge is down are lost.
 - Event files hold message text from every channel the bot is in. Keep the bot out of channels with sensitive data.
 - Only messages from `CLAUDE_SLACK_OWNER` count as your instructions; the skill tells sessions to treat other users' text as untrusted data.
+
+## Keywords
+
+Claude Code plugin, Claude Code Slack integration, Slack bot for AI agents, Slack events API, Slack Socket Mode, Bolt for Python, real-time Slack notifications for agents, Anthropic Claude, agentic workflows, Slack thread follower.
 
 ## License
 

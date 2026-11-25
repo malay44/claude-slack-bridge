@@ -1,8 +1,13 @@
 {
   "name": "claude-slack",
-  "description": "Slack event bridge for Claude Code sessions.",
-  "owner": { "name": "malay44" },
+  "description": "Slack events for Claude Code: an always-on Slack bridge and the slack-bridge plugin.",
+  "owner": {
+    "name": "malay44"
+  },
   "plugins": [
-    { "name": "slack-bridge", "source": "./plugins/slack-bridge" }
+    {
+      "name": "slack-bridge",
+      "source": "./plugins/slack-bridge"
+    }
   ]
 }

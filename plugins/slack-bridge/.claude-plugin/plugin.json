@@ -1,8 +1,22 @@
 {
   "name": "slack-bridge",
-  "description": "Listen to Slack without polling: subscribe a session to Slack events from the claude-slack bridge, Monitor them, and reply as the bot.",
+  "description": "Receive Slack messages in Claude Code without polling: subscribe a session to Slack events (threads, channels, DMs) from an always-on Socket Mode bridge, stream them into a Monitor, and reply as a Slack bot.",
   "version": "0.1.0",
-  "author": { "name": "malay44" },
+  "author": {
+    "name": "malay44"
+  },
   "repository": "https://github.com/malay44/claude-slack-bridge",
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": "https://github.com/malay44/claude-slack-bridge",
+  "keywords": [
+    "slack",
+    "slack-bot",
+    "slack-events",
+    "socket-mode",
+    "notifications",
+    "agents",
+    "claude-code",
+    "monitor",
+    "real-time"
+  ]
 }
