@@ -1,0 +1,8 @@
+{
+  "name": "claude-slack",
+  "description": "Slack event bridge for Claude Code sessions.",
+  "owner": { "name": "malay44" },
+  "plugins": [
+    { "name": "slack-bridge", "source": "./plugins/slack-bridge" }
+  ]
+}

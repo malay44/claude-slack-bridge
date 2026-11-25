@@ -1,0 +1,8 @@
+{
+  "name": "slack-bridge",
+  "description": "Listen to Slack without polling: subscribe a session to Slack events from the claude-slack bridge, Monitor them, and reply as the bot.",
+  "version": "0.1.0",
+  "author": { "name": "malay44" },
+  "repository": "https://github.com/malay44/claude-slack-bridge",
+  "license": "MIT"
+}

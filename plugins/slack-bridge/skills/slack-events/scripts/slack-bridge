@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONFIG="${CLAUDE_SLACK_CONFIG:-$HOME/.claude-slack/config.env}"
+[ -f "$CONFIG" ] && . "$CONFIG"
+SUBS_DIR="${CLAUDE_SLACK_SUBS_DIR:-$HOME/.claude-slack/subs}"
+BRIDGE_DIR="${CLAUDE_SLACK_BRIDGE_DIR:-}"
+APP_ID="${CLAUDE_SLACK_APP_ID:-}"
+OWNER="${CLAUDE_SLACK_OWNER:-}"
+LABEL="${CLAUDE_SLACK_LABEL:-com.claude-slack.bridge}"
+SLACK="${SLACK_CMD:-$HOME/.slack/bin/slack}"
+
+usage() {
+  cat <<'USAGE'
+slack-bridge sub NAME OUT [--match KEY=VALUE]... [--expires ISO_TIME]
+slack-bridge unsub NAME
+slack-bridge list
+slack-bridge status
+slack-bridge config
+slack-bridge send CHANNEL TEXT [THREAD_TS]
+slack-bridge thread CHANNEL THREAD_TS
+USAGE
+  exit 2
+}
+
+check_name() {
+  [[ "$1" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "bad NAME: use letters, digits, - or _" >&2; exit 2; }
+}
+
+slack_api() {
+  [ -n "$BRIDGE_DIR" ] && [ -n "$APP_ID" ] || { echo "set CLAUDE_SLACK_BRIDGE_DIR and CLAUDE_SLACK_APP_ID in $CONFIG" >&2; exit 2; }
+  (cd "$BRIDGE_DIR" && "$SLACK" api "$@" --app "$APP_ID")
+}
+
+cmd="${1:-}"; shift || true
+case "$cmd" in
+  sub)
+    [ $# -ge 2 ] || usage
+    name="$1"; out="$2"; shift 2
+    check_name "$name"
+    match='{}'; expires=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --match)
+          key="${2%%=*}"; value="${2#*=}"
+          if [ "$value" = "null" ]; then
+            match=$(jq -c --arg k "$key" '. + {($k): null}' <<<"$match")
+          else
+            match=$(jq -c --arg k "$key" --arg v "$value" '. + {($k): $v}' <<<"$match")
+          fi
+          shift 2 ;;
+        --expires) expires="$2"; shift 2 ;;
+        *) usage ;;
+      esac
+    done
+    mkdir -p "$SUBS_DIR" "$(dirname "$out")"
+    touch "$out"
+    out=$(cd "$(dirname "$out")" && pwd)/$(basename "$out")
+    jq -n --arg out "$out" --argjson match "$match" --arg exp "$expires" \
+      '{out: $out, match: $match} + (if $exp == "" then {} else {expires_at: $exp} end)' \
+      > "$SUBS_DIR/.$name.tmp"
+    mv "$SUBS_DIR/.$name.tmp" "$SUBS_DIR/$name.json"
+    echo "subscribed $name -> $out"
+    echo "listen: tail -n 0 -f $out"
+    ;;
+  unsub)
+    [ $# -eq 1 ] || usage
+    check_name "$1"
+    rm -f "$SUBS_DIR/$1.json" && echo "unsubscribed $1"
+    ;;
+  list)
+    for f in "$SUBS_DIR"/*.json; do
+      [ -e "$f" ] || { echo "no subscriptions"; break; }
+      echo "$(basename "$f" .json): $(cat "$f")"
+    done
+    ;;
+  status)
+    launchctl print "gui/$(id -u)/$LABEL" 2>/dev/null | grep -m1 -E "^\s+state" || echo "bridge not loaded"
+    ;;
+  config)
+    echo "config: $CONFIG"
+    echo "owner: ${OWNER:-<unset>}"
+    echo "app: ${APP_ID:-<unset>}"
+    echo "bridge dir: ${BRIDGE_DIR:-<unset>}"
+    echo "subs dir: $SUBS_DIR"
+    echo "launchd label: $LABEL"
+    ;;
+  send)
+    [ $# -ge 2 ] || usage
+    args=(chat.postMessage "channel=$1" "text=$2")
+    [ $# -ge 3 ] && args+=("thread_ts=$3")
+    slack_api "${args[@]}" | jq -c '{ok, error, channel, ts}'
+    ;;
+  thread)
+    [ $# -eq 2 ] || usage
+    slack_api conversations.replies "channel=$1" "ts=$2" \
+      | jq -c '.messages[]? | {user, bot_id, ts, text}'
+    ;;
+  *) usage ;;
+esac

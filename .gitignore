@@ -1,0 +1,12 @@
+.venv*/
+__pycache__/
+*.egg-info/
+*.py[cod]
+.ruff_cache/
+logs/
+.env*
+.slack/apps.dev.json
+.slack/config.json
+.slack/cache/
+.claude/*.local.json
+.DS_Store
